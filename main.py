@@ -11,7 +11,7 @@ import legacy
 app = FastAPI()
 
 
-@app.get("/")
+@app.get("/api2/gen-image/")
 def gen_images():
     network_pkl = "https://api.ngc.nvidia.com/v2/models/nvidia/research/stylegan3/versions/1/files/stylegan3-r-afhqv2-512x512.pkl"
     imgs = []
