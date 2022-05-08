@@ -127,14 +127,13 @@ def create_data_list(
 
 @app.patch("/api/data-list/{data_id}")
 def update_data(
-    data_id: int,
+    data_id: str,
     name: Optional[str] = None, 
     img: Optional[UploadFile] = None,
     description: Optional[str] = None,
 ):
     with open("data/data.json", "r") as f:
         data = json.load(f)
-    data_id = str(data_id)
     if data_id not in data:
         return Response(status_code=404)
     t = datetime.datetime.now().isoformat(timespec="seconds").replace(":", "")
@@ -159,11 +158,10 @@ def update_data(
 
 @app.delete("/api/data-list/{data_id}")
 def update_data(
-    data_id: int,
+    data_id: str,
 ):
     with open("data/data.json", "r") as f:
         data = json.load(f)
-    data_id = str(data_id)
     if data_id not in data:
         return Response(status_code=404)
     img, pkl = data[data_id]["image"], data[data_id]["pkl"]
