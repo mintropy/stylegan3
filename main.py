@@ -8,15 +8,24 @@ import os
 from fastapi import FastAPI, UploadFile
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 import PIL.Image
 import torch
+
 
 import dnnlib
 import legacy
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.mount("/api/images", StaticFiles(directory="data/images"), name="images")
 
