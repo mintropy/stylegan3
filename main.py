@@ -21,10 +21,15 @@ app = FastAPI()
 app.mount("/images", StaticFiles(directory="data/images"), name="images")
 
 
-@app.get("/api/gen-image/")
-def gen_images():
-    network_pkl = "https://api.ngc.nvidia.com/v2/models/nvidia/research/stylegan3/versions/1/files/stylegan3-r-afhqv2-512x512.pkl"
+@app.get("/api/gen-image/{data_id}/")
+def gen_images(data_id: str, count: Optional[int] = 1):
+    network_pkl = "https://api.ngc.nvidia.com/v2/models/nvidia/research/stylegan3/versions/1/files/stylegan3-r-afhqv2-256x256.pkl"
     imgs = []
+
+    with open("data/data.json", "r") as f:
+        data = json.load(f)
+    if data_id != "0" or data_id not in data:
+        return Response(status_code=404)
 
     # input parameter
     is_cuda = torch.cuda.is_available()
@@ -39,7 +44,11 @@ def gen_images():
     latent_vector = None
     truncation_psi_ = truncation_psi
     noise_mode_ = noise_mode
-    network = network_pkl
+    # network = network_pkl
+    if data_id == "0":
+        network = network_pkl
+    else:
+        network = f"data/{data[data_id]['pkl']}"
 
     with dnnlib.util.open_url(network) as f:
         G = legacy.load_network_pkl(f)['G_ema'].to(device)
@@ -125,7 +134,7 @@ def create_data_list(
     return data
 
 
-@app.patch("/api/data-list/{data_id}")
+@app.patch("/api/data-list/{data_id}/")
 def update_data(
     data_id: str,
     name: Optional[str] = None, 
@@ -156,7 +165,7 @@ def update_data(
     return data
 
 
-@app.delete("/api/data-list/{data_id}")
+@app.delete("/api/data-list/{data_id}/")
 def update_data(
     data_id: str,
 ):

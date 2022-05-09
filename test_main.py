@@ -14,8 +14,8 @@ app = FastAPI()
 app.mount("/images", StaticFiles(directory="data/images"), name="images")
 
 
-@app.get("/api/gen-image/")
-def gen_image():
+@app.get("/api/gen-image/{data_id}/")
+def gen_image(data_id: str, count: Optional[int] = 1):
     file_dir = "test.png"
     return FileResponse(file_dir)
 
