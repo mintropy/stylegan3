@@ -28,7 +28,7 @@ def gen_images(data_id: str, count: Optional[int] = 1):
 
     with open("data/data.json", "r") as f:
         data = json.load(f)
-    if data_id != "0" or data_id not in data:
+    if data_id != "0" and data_id not in data:
         return Response(status_code=404)
 
     # input parameter
