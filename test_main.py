@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
-app.mount("/images", StaticFiles(directory="data/images"), name="images")
+app.mount("/api/images", StaticFiles(directory="data/images"), name="images")
 
 
 @app.get("/api/gen-image/{data_id}/")
@@ -79,7 +79,7 @@ def create_data_list(
     return data
 
 
-@app.patch("/api/data-list/{data_id}")
+@app.patch("/api/data-list/{data_id}/")
 def update_data(
     data_id: int,
     name: Optional[str] = None, 
@@ -111,7 +111,7 @@ def update_data(
     return data
 
 
-@app.delete("/api/data-list/{data_id}")
+@app.delete("/api/data-list/{data_id}/")
 def update_data(
     data_id: int,
 ):
@@ -128,3 +128,36 @@ def update_data(
     with open("data/data.json", "w") as f:
         json.dump(data, f, indent=2)
     return data
+
+
+@app.patch("/api/pkl/rename/{data_id}/")
+def pkl_rename(
+    data_id: str,
+    new_name: str
+):
+    with open("data/data.json", "r") as f:
+        data = json.load(f)
+    if data_id not in data:
+        return Response(status_code=404)
+    if new_name[:-4] != ".pkl":
+        new_name = f"{new_name}.pkl"
+    if os.path.isfile(f"data/{new_name}"):
+        return Response(status_code=400)
+    old_name = f"data/{data[data_id]['pkl']}"
+    os.rename(old_name, f"data/{new_name}")
+    data[data_id]["pkl"] = new_name
+    with open("data/data.json", "w") as f:
+        json.dump(data, f, indent=2)
+    return new_name
+
+
+@app.get("/api/pkl/download/{data_id}/")
+def pkl_download(
+    data_id: str,
+):
+    with open("data/data.json", "r") as f:
+        data = json.load(f)
+    if data_id not in data:
+        return Response(status_code=404)
+    pkl = data[data_id]["pkl"]
+    return FileResponse(f"data/{pkl}")
