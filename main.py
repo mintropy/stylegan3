@@ -23,7 +23,7 @@ app.mount("/images", StaticFiles(directory="data/images"), name="images")
 
 @app.get("/api/gen-image/{data_id}/")
 def gen_images(data_id: str, count: Optional[int] = 1):
-    network_pkl = "https://api.ngc.nvidia.com/v2/models/nvidia/research/stylegan3/versions/1/files/stylegan3-r-afhqv2-256x256.pkl"
+    network_pkl = "https://api.ngc.nvidia.com/v2/models/nvidia/research/stylegan3/versions/1/files/stylegan3-r-afhqv2-512x512.pkl"
     imgs = []
 
     with open("data/data.json", "r") as f:
