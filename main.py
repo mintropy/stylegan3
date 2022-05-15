@@ -1,7 +1,7 @@
 import datetime
 import shutil
 import json
-from typing import Optional
+from typing import Optional, List
 import os
 
 
@@ -27,7 +27,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/api/images", StaticFiles(directory="data/images"), name="images")
+app.mount(
+    "/api/images", 
+    StaticFiles(directory="data/images/"), 
+    name="images"
+)
 
 
 @app.get("/api/gen-image/{data_id}/")
@@ -124,10 +128,10 @@ def create_data_list(
         shutil.copyfileobj(pkl_file.file, f)
     if img is not None:
         img_name = img.filename
-        if os.path.isfile(f"data/images/{img_name}"):
+        if os.path.isfile(f"data/images/cover/{img_name}"):
             dot_idx = img_name.rindex(".")
             img_name = f"{img_name[:dot_idx]}-{t}{img_name[dot_idx:]}"
-        with open(f"data/images/{img_name}", "wb") as image:
+        with open(f"data/images/cover/{img_name}", "wb") as image:
             shutil.copyfileobj(img.file, image)
     else:
         img_name = None
@@ -135,7 +139,7 @@ def create_data_list(
     data[num] = {
         "pkl": pkl_file_name,
         "name": name,
-        "image": img_name,
+        "image": f"cover/{img_name}",
         "description": description
     }
     with open("data/data.json", "w") as f:
@@ -223,3 +227,35 @@ def pkl_download(
         return Response(status_code=404)
     pkl = data[data_id]["pkl"]
     return FileResponse(f"data/{pkl}")
+
+
+@app.get("/api/train/image/{data_id}/")
+def train_image(
+    data_id: str,
+):
+    file_path = f"./data/images/train/{data_id}"
+    if os.path.isdir(file_path):
+        file_list = os.listdir(file_path)
+    else:
+        file_list = []
+    return file_list
+
+
+@app.post("/api/train/image/{data_id}/")
+def upload_train_image(
+    data_id: str,
+    images: List[UploadFile],
+):
+    with open("data/data.json", "r") as f:
+        data = json.load(f)
+    if data_id not in data:
+        return Response(status_code=404)
+    file_path = f"data/images/train/{data_id}"
+    if not os.path.isdir(file_path):
+        os.mkdir(file_path)
+    for image in images:
+        image_path = f"{file_path}/{image.filename}"
+        if not os.path.isfile(image_path):
+            with open(image_path, "wb") as img:
+                shutil.copyfileobj(image.file, img)
+    return data_id
