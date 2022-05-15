@@ -68,13 +68,14 @@ def create_data_list(
             img_name = f"{img_name[:dot_idx]}-{t}{img_name[dot_idx:]}"
         with open(f"data/images/cover/{img_name}", "wb") as image:
             shutil.copyfileobj(img.file, image)
+        img_name = f"cover/{img_name}"
     else:
         img_name = None
     num = 1 if not data else (int(max(data.keys())) + 1)
     data[num] = {
         "pkl": pkl_file_name,
         "name": name,
-        "image": f"cover/{img_name}",
+        "image": img_name,
         "description": description
     }
     with open("data/data.json", "w") as f:
