@@ -7,7 +7,7 @@ import os
 import zipfile
 
 
-from fastapi import FastAPI, UploadFile, Query
+from fastapi import FastAPI, APIRouter, UploadFile, Query
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,8 +39,11 @@ app.mount(
 )
 
 
-@app.get("/api/gen-image/{data_id}/")
-def gen_images(data_id: str, count: Optional[int] = 1):
+@app.get(
+    "/api/gen-image/{data_id}/",
+    tags=["images"],
+)
+async def gen_images(data_id: str, count: Optional[int] = 1):
 
     with open("data/data.json", "r") as f:
         data = json.load(f)
@@ -120,15 +123,21 @@ def gen_images(data_id: str, count: Optional[int] = 1):
     return resp
 
 
-@app.get("/api/data-list/")
-def read_data_list():
+@app.get(
+    "/api/data-list/",
+    tags=["data list"],
+)
+async def read_data_list():
     with open("data/data.json") as f:
         data = json.load(f)
     return data
 
 
-@app.post("/api/data-list/")
-def create_data_list(
+@app.post(
+    "/api/data-list/",
+    tags=["data list"],
+)
+async def create_data_list(
     pkl_file: UploadFile, 
     name: Optional[str] = None, 
     img: Optional[UploadFile] = None,
@@ -184,8 +193,11 @@ def create_data_list(
     return data
 
 
-@app.patch("/api/data-list/{data_id}/")
-def update_data(
+@app.patch(
+    "/api/data-list/{data_id}/",
+    tags=["data list"],
+)
+async def update_data(
     data_id: str,
     name: Optional[str] = None, 
     img: Optional[UploadFile] = None,
@@ -203,7 +215,8 @@ def update_data(
         data[data_id]["name"] = name
     if img is not None:
         prev_img = data[data_id]["image"]
-        os.remove(f"data/images/{prev_img}")
+        if prev_img is not None:
+            os.remove(f"data/images/{prev_img}")
         img_name = img.filename
         if os.path.isfile(f"data/images/cover/{img_name}"):
             dot_idx = img_name.rindex(".")
@@ -222,8 +235,11 @@ def update_data(
     return data
 
 
-@app.delete("/api/data-list/{data_id}/")
-def delete_data(
+@app.delete(
+    "/api/data-list/{data_id}/",
+    tags=["data list"],
+)
+async def delete_data(
     data_id: int,
 ):
     with open("data/data.json", "r") as f:
@@ -241,8 +257,11 @@ def delete_data(
     return data
 
 
-@app.patch("/api/pkl/rename/{data_id}/")
-def pkl_rename(
+@app.patch(
+    "/api/pkl/rename/{data_id}/",
+    tags=["pkl"],
+)
+async def pkl_rename(
     data_id: str,
     new_name: str
 ):
@@ -262,8 +281,11 @@ def pkl_rename(
     return new_name
 
 
-@app.get("/api/pkl/download/{data_id}/")
-def pkl_download(
+@app.get(
+    "/api/pkl/download/{data_id}/",
+    tags=["pkl"],
+)
+async def pkl_download(
     data_id: str,
 ):
     with open("data/data.json", "r") as f:
@@ -274,8 +296,11 @@ def pkl_download(
     return FileResponse(f"data/{pkl}")
 
 
-@app.get("/api/train/image/{data_id}/")
-def train_image(
+@app.get(
+    "/api/train/image/{data_id}/",
+    tags=["train"],
+)
+async def train_image(
     data_id: str,
 ):
     file_path = f"./data/images/train/{data_id}"
@@ -286,8 +311,11 @@ def train_image(
     return file_list
 
 
-@app.post("/api/train/image/{data_id}/")
-def upload_train_image(
+@app.post(
+    "/api/train/image/{data_id}/",
+    tags=["train"],
+)
+async def upload_train_image(
     data_id: str,
     images: List[UploadFile],
 ):
