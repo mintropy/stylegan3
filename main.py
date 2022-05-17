@@ -52,13 +52,11 @@ def gen_images(data_id: str, count: Optional[int] = 1):
     # input parameter
     is_cuda = torch.cuda.is_available()
     device = torch.device('cuda' if is_cuda else 'cpu')
-    seeds = np.random.randint(2**32 - 1, size=1)
     latent_vector = None
     truncation_psi = 0.95
     noise_mode = 'random'
 
     # parameter rename
-    seeds_ = seeds
     latent_vector = None
     truncation_psi_ = truncation_psi
     noise_mode_ = noise_mode
@@ -79,6 +77,8 @@ def gen_images(data_id: str, count: Optional[int] = 1):
     imgs = []
     imgs_path = []
     for i in range(count):
+        seeds = np.random.randint(2**32 - 1, size=1)
+        seeds_ = seeds
         if latent_vector == None :
             for seed_idx, seed in enumerate(seeds_):
                 z = torch.from_numpy(np.random.RandomState(seed).randn(1, G.z_dim)).to(device)
