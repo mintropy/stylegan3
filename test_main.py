@@ -67,7 +67,7 @@ def create_data_list(
     img: Optional[UploadFile] = None,
     description: Optional[str] = None,
     fid: Optional[float] = Query(default=None, gt=0),
-    kimg: Optional[int] = None,
+    kimg: Optional[int] = Query(default=None, gt=0),
 ):
     if (
         pkl_file.content_type != "application/octet-stream"
@@ -124,7 +124,7 @@ def update_data(
     img: Optional[UploadFile] = None,
     description: Optional[str] = None,
     fid: Optional[float] = Query(default=None, gt=0),
-    kimg: Optional[int] = None,
+    kimg: Optional[int] = Query(default=None, gt=0),
 ):
     with open("data/data.json", "r") as f:
         data = json.load(f)
