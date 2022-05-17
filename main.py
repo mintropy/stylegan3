@@ -189,6 +189,7 @@ def update_data(
 ):
     with open("data/data.json", "r") as f:
         data = json.load(f)
+    data_id = str(data_id)
     if data_id not in data:
         return Response(status_code=404)
     t = datetime.datetime.now().isoformat(timespec="seconds").replace(":", "")
@@ -198,10 +199,10 @@ def update_data(
         prev_img = data[data_id]["image"]
         os.remove(f"data/images/{prev_img}")
         img_name = img.filename
-        if os.path.isfile(f"data/images/{img_name}"):
+        if os.path.isfile(f"data/images/cover/{img_name}"):
             dot_idx = img_name.rindex(".")
             img_name = f"{img_name[:dot_idx]}-{t}{img_name[dot_idx:]}"
-        with open(f"data/images/{img_name}", "wb") as image:
+        with open(f"data/images/cover/{img_name}", "wb") as image:
             shutil.copyfileobj(img.file, image)
         data[data_id]["image"] = f"cover/{img_name}"
     if description is not None:
@@ -212,11 +213,12 @@ def update_data(
 
 
 @app.delete("/api/data-list/{data_id}/")
-def update_data(
-    data_id: str,
+def delete_data(
+    data_id: int,
 ):
     with open("data/data.json", "r") as f:
         data = json.load(f)
+    data_id = str(data_id)
     if data_id not in data:
         return Response(status_code=404)
     img, pkl = data[data_id]["image"], data[data_id]["pkl"]

@@ -146,7 +146,7 @@ def update_data(
 
 
 @app.delete("/api/data-list/{data_id}/")
-def update_data(
+def delete_data(
     data_id: int,
 ):
     with open("data/data.json", "r") as f:
