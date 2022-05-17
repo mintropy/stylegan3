@@ -7,7 +7,7 @@ import os
 import zipfile
 
 
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, UploadFile, Query
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -133,6 +133,8 @@ def create_data_list(
     name: Optional[str] = None, 
     img: Optional[UploadFile] = None,
     description: Optional[str] = None,
+    fid: Optional[float] = Query(default=None, gt=0),
+    kimg: Optional[int] = None,
 ):
     if (
         pkl_file.content_type != "application/octet-stream"
@@ -173,7 +175,9 @@ def create_data_list(
         "pkl": pkl_file_name,
         "name": name,
         "image": img_name,
-        "description": description
+        "description": description,
+        "fid": fid,
+        "kimg": kimg,
     }
     with open("data/data.json", "w") as f:
         json.dump(data, f, indent=2)
@@ -186,6 +190,8 @@ def update_data(
     name: Optional[str] = None, 
     img: Optional[UploadFile] = None,
     description: Optional[str] = None,
+    fid: Optional[float] = Query(default=None, gt=0),
+    kimg: Optional[int] = None,
 ):
     with open("data/data.json", "r") as f:
         data = json.load(f)
@@ -207,6 +213,10 @@ def update_data(
         data[data_id]["image"] = f"cover/{img_name}"
     if description is not None:
         data[data_id]["description"] = description
+    if fid is not None:
+        data[data_id]["fid"] = fid
+    if kimg is not None:
+        data[data_id]["kimg"] = kimg
     with open("data/data.json", "w") as f:
         json.dump(data, f, indent=2)
     return data
