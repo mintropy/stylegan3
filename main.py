@@ -91,11 +91,11 @@ def gen_images(data_id: str, count: Optional[int] = 1):
                 img = (img.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
                 imgs.append(PIL.Image.fromarray(img[0].cpu().numpy(), 'RGB'))
         img = imgs[-1]
-        img.save(f'data/images/get/{data_id}_{i}.png')
-        imgs_path.append(f'data/images/get/{data_id}_{i}.png')
+        img.save(f'data/images/gen/{data_id}_{i}.png')
+        imgs_path.append(f'data/images/gen/{data_id}_{i}.png')
     
     if count == 1:
-        return FileResponse(f"data/images/get/{data_id}_0.png")
+        return FileResponse(f"data/images/gen/{data_id}_0.png")
     zip_filename = "archive.zip"
     s = io.BytesIO()
     zf = zipfile.ZipFile(s, "w")
