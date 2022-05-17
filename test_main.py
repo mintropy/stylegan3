@@ -3,11 +3,17 @@ import shutil
 import json
 from typing import Optional, List
 import os
+import zipfile
+import io
+
 
 from fastapi import FastAPI, UploadFile
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+
+# set maximum image generate
+MAXIMUM_IMAGE_GENERATE = 2
 
 app = FastAPI()
 
@@ -19,8 +25,32 @@ app.mount(
 
 @app.get("/api/gen-image/{data_id}/")
 def gen_image(data_id: str, count: Optional[int] = 1):
-    file_dir = "test.png"
-    return FileResponse(file_dir)
+    
+    if count == 1:
+        file_dir = "test.png"
+        return FileResponse(file_dir)
+    
+    if count > MAXIMUM_IMAGE_GENERATE:
+        count = MAXIMUM_IMAGE_GENERATE
+    zip_filename = "archive.zip"
+    s = io.BytesIO()
+    zf = zipfile.ZipFile(s, "w")
+
+    # for fpath in filenames:
+        # Calculate path for file in zip
+        # fdir, fname = os.path.split(fpath)
+        # Add file, at correct path
+        # zf.write(fpath, fname)
+    
+    fdir, fname = os.path.split("test.png")
+    zf.write("test.png", fname)
+    # Must close zip for all contents to be written
+    zf.close()
+    # Grab ZIP file from in-memory, make response with correct MIME-type
+    resp = Response(s.getvalue(), media_type="application/x-zip-compressed", headers={
+        'Content-Disposition': f'attachment;filename={zip_filename}'
+    })
+    return resp
 
 
 @app.get("/api/data-list/")
@@ -107,7 +137,7 @@ def update_data(
             img_name = f"{img_name[:dot_idx]}-{t}{img_name[dot_idx:]}"
         with open(f"data/images/cover/{img_name}", "wb") as image:
             shutil.copyfileobj(img.file, image)
-        data[data_id]["image"] = img_name
+        data[data_id]["image"] = f"cover/{img_name}"
     if description is not None:
         data[data_id]["description"] = description
     with open("data/data.json", "w") as f:

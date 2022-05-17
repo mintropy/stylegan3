@@ -1,8 +1,10 @@
 import datetime
 import shutil
+import io
 import json
 from typing import Optional, List
 import os
+import zipfile
 
 
 from fastapi import FastAPI, UploadFile
@@ -17,6 +19,9 @@ import torch
 import dnnlib
 import legacy
 
+
+# set maximum image generate
+MAXIMUM_IMAGE_GENERATE = 2
 
 app = FastAPI()
 
@@ -36,14 +41,14 @@ app.mount(
 
 @app.get("/api/gen-image/{data_id}/")
 def gen_images(data_id: str, count: Optional[int] = 1):
-    network_pkl = "https://api.ngc.nvidia.com/v2/models/nvidia/research/stylegan3/versions/1/files/stylegan3-r-afhqv2-512x512.pkl"
-    imgs = []
 
     with open("data/data.json", "r") as f:
         data = json.load(f)
     if data_id != "0" and data_id not in data:
         return Response(status_code=404)
 
+    if count > MAXIMUM_IMAGE_GENERATE:
+        count = MAXIMUM_IMAGE_GENERATE
     # input parameter
     is_cuda = torch.cuda.is_available()
     device = torch.device('cuda' if is_cuda else 'cpu')
@@ -58,10 +63,7 @@ def gen_images(data_id: str, count: Optional[int] = 1):
     truncation_psi_ = truncation_psi
     noise_mode_ = noise_mode
     # network = network_pkl
-    if data_id == "0":
-        network = network_pkl
-    else:
-        network = f"data/{data[data_id]['pkl']}"
+    network = f"data/{data[data_id]['pkl']}"
 
     with dnnlib.util.open_url(network) as f:
         G = legacy.load_network_pkl(f)['G_ema'].to(device)
@@ -71,21 +73,51 @@ def gen_images(data_id: str, count: Optional[int] = 1):
     #     label[:, class_idx] = 1
     class_idx = label
 
-    if latent_vector == None : 
-        for seed_idx, seed in enumerate(seeds_):
-            z = torch.from_numpy(np.random.RandomState(seed).randn(1, G.z_dim)).to(device)
-            img = G(z, class_idx, truncation_psi=truncation_psi_, noise_mode=noise_mode_)
-            img = (img.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
-            imgs.append(PIL.Image.fromarray(img[0].cpu().numpy(), 'RGB'))
-    else:
-        for i in range(len(latent_vector)):
-            img = G(latent_vector[i], class_idx, truncation_psi=truncation_psi_, noise_mode=noise_mode_)
-            img = (img.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
-            imgs.append(PIL.Image.fromarray(img[0].cpu().numpy(), 'RGB'))
-    img = imgs[0]
-    img.save(f'data/test.png')
+    if os.path.isdir("data/images/gen"):
+        shutil.rmtree("data/images/gen")
+    os.mkdir("data/images/gen")
+    imgs = []
+    imgs_path = []
+    for i in range(count):
+        if latent_vector == None :
+            for seed_idx, seed in enumerate(seeds_):
+                z = torch.from_numpy(np.random.RandomState(seed).randn(1, G.z_dim)).to(device)
+                img = G(z, class_idx, truncation_psi=truncation_psi_, noise_mode=noise_mode_)
+                img = (img.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
+                imgs.append(PIL.Image.fromarray(img[0].cpu().numpy(), 'RGB'))
+        else:
+            for i in range(len(latent_vector)):
+                img = G(latent_vector[i], class_idx, truncation_psi=truncation_psi_, noise_mode=noise_mode_)
+                img = (img.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)
+                imgs.append(PIL.Image.fromarray(img[0].cpu().numpy(), 'RGB'))
+        img = imgs[-1]
+        img.save(f'data/images/get/{data_id}_{i}.png')
+        imgs_path.append(f'data/images/get/{data_id}_{i}.png')
     
-    return FileResponse("data/test.png")
+    if count == 1:
+        return FileResponse(f"data/images/get/{data_id}_0.png")
+    zip_filename = "archive.zip"
+    s = io.BytesIO()
+    zf = zipfile.ZipFile(s, "w")
+
+    for fpath in imgs_path:
+        # Calculate path for file in zip
+        fdir, fname = os.path.split(fpath)
+        # Add file, at correct path
+        zf.write(fpath, fname)
+    
+    # Must close zip for all contents to be written
+    zf.close()
+    # Grab ZIP file from in-memory, make response with correct MIME-type
+    resp = Response(
+        s.getvalue(), 
+        media_type="application/x-zip-compressed", 
+        headers=
+            {
+            'Content-Disposition': f'attachment;filename={zip_filename}'
+            }
+    )
+    return resp
 
 
 @app.get("/api/data-list/")
@@ -171,7 +203,7 @@ def update_data(
             img_name = f"{img_name[:dot_idx]}-{t}{img_name[dot_idx:]}"
         with open(f"data/images/{img_name}", "wb") as image:
             shutil.copyfileobj(img.file, image)
-        data[data_id]["image"] = img_name
+        data[data_id]["image"] = f"cover/{img_name}"
     if description is not None:
         data[data_id]["description"] = description
     with open("data/data.json", "w") as f:
