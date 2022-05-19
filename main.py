@@ -305,3 +305,20 @@ async def upload_train_image(
             with open(image_path, "wb") as img:
                 shutil.copyfileobj(image.file, img)
     return data_id
+
+
+@app.delete(
+    "/api/train/image/{data_id}/",
+    tags=["train"],
+)
+async def upload_train_image(
+    data_id: str,
+):
+    with open("data/data.json", "r") as f:
+        data = json.load(f)
+    if data_id not in data:
+        return Response(status_code=404)
+    file_path = f"data/images/train/{data_id}"
+    if os.path.isdir(file_path):
+        shutil.rmtree(file_path)
+    return Response(status_code=204)
