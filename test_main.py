@@ -128,7 +128,6 @@ async def update_data(
     data_id = str(data_id)
     if data_id not in data:
         return Response(status_code=404)
-    t = datetime.datetime.now().isoformat(timespec="seconds").replace(":", "")
     if name is not None:
         data[data_id]["name"] = name
     if img is not None:
