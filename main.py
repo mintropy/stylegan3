@@ -7,7 +7,7 @@ import os
 import zipfile
 
 
-from fastapi import FastAPI, APIRouter, UploadFile, Query
+from fastapi import FastAPI, UploadFile, Query
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -140,7 +140,7 @@ async def read_data_list():
 async def create_data_list(
     pkl_file: UploadFile, 
     name: Optional[str] = None, 
-    img: Optional[UploadFile] = None,
+    img: Optional[str] = None,
     description: Optional[str] = None,
     fid: Optional[float] = Query(default=None, gt=0),
     kimg: Optional[int] = Query(default=None, gt=0),
@@ -151,14 +151,9 @@ async def create_data_list(
             len(pkl_file.filename) >= 4
             and pkl_file.filename[-4:] != '.pkl'
         )
-        or (
-            img is not None
-            and img.content_type[:5] != "image"
-        )
     ):
         return Response(status_code=400)
     
-    # def file & imgage path
     pkl_file_name = pkl_file.filename
     if name is None:
         name = pkl_file_name
@@ -169,21 +164,11 @@ async def create_data_list(
         pkl_file_name = f"{pkl_file_name[:-4]}-{t}.pkl"
     with open(f"data/{pkl_file_name}", "wb") as f:
         shutil.copyfileobj(pkl_file.file, f)
-    if img is not None:
-        img_name = img.filename
-        if os.path.isfile(f"data/images/cover/{img_name}"):
-            dot_idx = img_name.rindex(".")
-            img_name = f"{img_name[:dot_idx]}-{t}{img_name[dot_idx:]}"
-        with open(f"data/images/cover/{img_name}", "wb") as image:
-            shutil.copyfileobj(img.file, image)
-        img_name = f"cover/{img_name}"
-    else:
-        img_name = None
     num = 1 if not data else (int(max(data.keys())) + 1)
     data[num] = {
         "pkl": pkl_file_name,
         "name": name,
-        "image": img_name,
+        "image": img,
         "description": description,
         "fid": fid,
         "kimg": kimg,
@@ -200,7 +185,7 @@ async def create_data_list(
 async def update_data(
     data_id: str,
     name: Optional[str] = None, 
-    img: Optional[UploadFile] = None,
+    img: Optional[str] = None,
     description: Optional[str] = None,
     fid: Optional[float] = Query(default=None, gt=0),
     kimg: Optional[int] = Query(default=None, gt=0),
@@ -210,20 +195,10 @@ async def update_data(
     data_id = str(data_id)
     if data_id not in data:
         return Response(status_code=404)
-    t = datetime.datetime.now().isoformat(timespec="seconds").replace(":", "")
     if name is not None:
         data[data_id]["name"] = name
     if img is not None:
-        prev_img = data[data_id]["image"]
-        if prev_img is not None:
-            os.remove(f"data/images/{prev_img}")
-        img_name = img.filename
-        if os.path.isfile(f"data/images/cover/{img_name}"):
-            dot_idx = img_name.rindex(".")
-            img_name = f"{img_name[:dot_idx]}-{t}{img_name[dot_idx:]}"
-        with open(f"data/images/cover/{img_name}", "wb") as image:
-            shutil.copyfileobj(img.file, image)
-        data[data_id]["image"] = f"cover/{img_name}"
+        data[data_id]["image"] = img
     if description is not None:
         data[data_id]["description"] = description
     if fid is not None:
@@ -247,10 +222,8 @@ async def delete_data(
     data_id = str(data_id)
     if data_id not in data:
         return Response(status_code=404)
-    img, pkl = data[data_id]["image"], data[data_id]["pkl"]
+    pkl = data[data_id]["pkl"]
     os.remove(f"data/{pkl}")
-    if img is not None:
-        os.remove(f"data/images/{img}")
     data.pop(data_id)
     with open("data/data.json", "w") as f:
         json.dump(data, f, indent=2)
